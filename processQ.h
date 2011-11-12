@@ -3,7 +3,7 @@
 
 #include "rtx.h"
 
-proc_queue * proc_queue_create();
+proc_queue * proc_q_create();
 void process_q_destroy(proc_queue * queue);
 
 int process_q_is_empty(proc_queue * queue);

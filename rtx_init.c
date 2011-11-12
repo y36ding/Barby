@@ -1,13 +1,15 @@
 #include "rtx_init.h"
 #include "rtx.h"
 #include "kbcrt.h"
+#include "MsgEnvQueue.h"
 
 
 // Initialization Table
 InitProc init_table[PROCESS_COUNT] = {
 		{"Keyboard I proc\0", KB_I_PROCESS_ID, 0, TRUE},
-		{"CRT I proc\0", CRT_I_PROCESS_ID, TRUE},
-		{"P Process\0", P_PROCESS_ID, FALSE}
+		{"CRT I proc\0", CRT_I_PROCESS_ID,0, TRUE},
+		{"P Process\0", P_PROCESS_ID,0, FALSE},
+		{"Timer I process\0", TIMER_I_PROCESS_ID,0, TRUE}
 };
 
 int init_globals() {
@@ -21,8 +23,21 @@ int init_globals() {
 	cfilename = "crtBuffer";  //the name of the crt_memory file
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	return SUCCESS;
+	ProcessPQ = (proc_pq*)malloc(sizeof(proc_pq));
+	ProcessPQ->num_priorities = NUM_PRIORITIES;
+	for (int i =0; i<NUM_PRIORITIES; i++) {
+		ProcessPQ->priority_queues[i] = (proc_queue*)malloc(sizeof(proc_queue));
+		ProcessPQ->priority_queues[i]->proc_q_create();
+	}
 
+
+
+
+	timeout_q = NULL;
+	fflush(stdout);
+	printf("");
+	fflush(stdout);
+	ps("1");
 }
 
 int init_all_lists()
@@ -52,6 +67,9 @@ int init_all_lists()
 	for (i = 0; i < MSG_ENV_COUNT; i++)
 	{
 		msg_list[i] = (MsgEnv*)malloc(sizeof(MsgEnv));
+		msg_list[i]->time_delay = 0;
+		msg_list[i]->next=NULL;
+		msg_list[i]->msg_type=READY;
 		if (msg_list[i] == NULL)
 		{
 			init_status   = OTHER_ERROR;
@@ -66,6 +84,7 @@ int init_all_lists()
 		MsgEnvQ_enqueue(free_env_queue, msg_list[i]);
 		// deal with non null later
 	}
+
 
 
 	current_process = (pcb*)pid_to_pcb(P_PROCESS_ID);
@@ -83,6 +102,9 @@ int init_all_lists()
 
 	sigset(SIGUSR1,kbd_i_proc);
 	sigset(SIGUSR2,crt_i_proc);
+	sigset(SIGALRM,timer_i_proc);
+
+	alarm(1);
 
 
 	return init_status ;

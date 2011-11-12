@@ -30,13 +30,15 @@
 #define KB_I_PROCESS_ID        0
 #define CRT_I_PROCESS_ID       1
 #define P_PROCESS_ID 		   2
+#define TIMER_I_PROCESS_ID	   3
 
 // RTX Constants
 #define MSG_ENV_SIZE 100
 #define MSG_ENV_COUNT 50
 #define NUM_PRIORITY_LEVEL 5
-#define PROCESS_COUNT 3
+#define PROCESS_COUNT 4
 #define STACK_SIZE 100
+#define NUM_PRIORITIES 4
 
 // error codes
 #define SUCCESS 0
@@ -66,6 +68,7 @@ typedef struct MsgEnv {
     int 	sender_pid;
     MsgType 	msg_type;
     char    *data;
+    int time_delay;
 } MsgEnv;
 
 typedef enum process_states {
@@ -104,17 +107,19 @@ typedef struct proc_queue {
 
 typedef struct proc_pq {
     int num_priorities;
-    proc_queue **priority_queues;
+    proc_queue *priority_queues[NUM_PRIORITIES];
 } proc_pq;
 
-
 // global variables
+
+proc_pq* ProcessPQ;
+
+
 pcb* current_process;
 pcb* prev_process;
 MsgEnvQ* free_env_queue;
 pcb* pcb_list[PROCESS_COUNT];
 MsgEnvQ* displayQ;
-
 
 // globals
 inputbuf * in_mem_p_key;	// pointer to structure that is the shared memory
@@ -133,6 +138,8 @@ int displayClock;
 char * sfilename;
 char * cfilename;
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+MsgEnv * timeout_q;
 
 #endif
 

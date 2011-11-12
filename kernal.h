@@ -17,4 +17,7 @@ MsgEnv* k_request_msg_env();
 
 int k_pseudo_process_switch(int pid);
 void k_return_from_switch();
+
+int k_request_delay(int delay, int wakeup_code, MsgEnv *msg_env);
+
 #endif

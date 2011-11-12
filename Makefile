@@ -35,9 +35,9 @@ all: crt iRTX keyboard clean
 #   programs
 #   these commands link the object files and libraries into executables 
 
-iRTX: debug.o rtx_init.o iRTX.o userAPI.o MsgEnvQueue.o kernal.o iProcs.o procPQ.o processQ.o
+iRTX: debug.o rtx_init.o iRTX.o userAPI.o MsgEnvQueue.o kernal.o iProcs.o timerQ.o procPQ.o processQ.o
 	@echo linking iRTX.o file
-	$(LINK) $(LNFLAGS) debug.o rtx_init.o iRTX.o userAPI.o MsgEnvQueue.o iProcs.o kernal.o procPQ.o processQ.o -o iRTX
+	$(LINK) $(LNFLAGS) debug.o rtx_init.o iRTX.o userAPI.o MsgEnvQueue.o iProcs.o kernal.o timerQ.o procPQ.o processQ.o -o iRTX
 
 crt:crt.o
 	@echo linking crt.o file
@@ -96,6 +96,10 @@ procPQ.o: procPQ.c
 processQ.o: processQ.c
 	@echo building processQ.c
 	$(CC) $(CFLAGS) processQ.c
+	
+timerQ.o: timerQ.c
+	@echo building timerQ.c
+	$(CC) $(CFLAGS) timerQ.c
 
 clean:
 	@echo Cleaning object files

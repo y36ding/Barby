@@ -89,16 +89,7 @@ int main()
     	cleanup();
     }
 
-    MsgEnv* timer_env = request_msg_env();
-    int i;
-    for(i = 2; i < 5; i+=3) {
-    	k_request_delay(i,WAKEUP10,timer_env);
-    	usleep(1000000000);
-    }
-
     processP();
-
-    while(1);
 
 	// should never reach here, but in case we do, clean up after ourselves
 	cleanup();

@@ -14,4 +14,10 @@ int get_console_chars(MsgEnv *msg_env);
 int release_message_env(MsgEnv* env);
 MsgEnv* request_msg_env();
 
+int release_processor();
+int request_process_status(MsgEnv *env);
+int terminate();
+int change_priority(int new_priority, int target_pid);
+
+int get_trace_buffer(MsgEnv *env);
 #endif

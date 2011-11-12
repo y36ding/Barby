@@ -24,7 +24,7 @@ void crt_i_proc(int signum)
 #endif
 
 			MsgEnv* envTemp = NULL;
-			envTemp = (MsgEnv*)MsgEnvQ_dequeue(displayQ);
+			envTemp = MsgEnvQ_dequeue(displayQ);
 			if (envTemp == NULL)
 			{
 				printf("Warning: Recieved a signal in CRT I process but there was no message.");
@@ -85,12 +85,7 @@ void kbd_i_proc(int signum)
 		// Loop until writing in shared memory is done
 		while (in_mem_p_key->ok_flag==OKAY_TO_WRITE);
 
-		//copies into first parameter from second parameter of length+1 bytes
-		memcpy(env->data,in_mem_p_key->indata,in_mem_p_key->length + 1);
-
-		if (!strcmp(in_mem_p_key->indata,"t")) {
-			die(SIGINT);
-		}
+		memcpy(env->data,in_mem_p_key->indata,in_mem_p_key->length);
 
 		// Send message back to process that called us
 		k_send_message(env->sender_pid ,env);
@@ -98,70 +93,7 @@ void kbd_i_proc(int signum)
 		ps("Keyboard sent message");
 
 		in_mem_p_key->ok_flag = OKAY_TO_WRITE; // okay to write again
-		k_return_from_switch();
-		return;
 	}
 	k_return_from_switch();
 	return;
 }
-
-void timer_i_proc(int signum) {
-
-	int error = k_pseudo_process_switch(TIMER_I_PROCESS_ID);
-	if (error != SUCCESS)
-	{
-		printf("Error! Context Switch failed in keyboard I process");
-		cleanup();
-	}
-
-	//while(1)
-	//  {
-	        // Increment the time by recording a tick
-			ps("-----------------In Timer-------------------");
-	        clock_inc_time();
-
-	        MsgEnv* msg_env = (MsgEnv*)k_receive_message();
-
-	        pm(msg_env);
-
-	        while (msg_env != NULL && msg_env->msg_type==WAKEUP10)
-	        {
-	        	fflush(stdout);
-	            timeout_q_insert(msg_env);
-	            msg_env = (MsgEnv*)k_receive_message();
-	        }
-
-			msg_env = (MsgEnv*)check_timeout_q();
-			if (msg_env==NULL){
-				fflush(stdout);
-			}
-
-	        if (msg_env != NULL)
-	        {
-	            // Send the envelope back
-	        	fflush(stdout);
-	        	msg_env->msg_type = WAKEUP10;
-	        	msg_env->data = "Time expired!\0";
-	            k_send_message(msg_env->sender_pid, msg_env);
-	        }
-
-			//exit i process
-	        //k_i_process_exit();
-	    //}
-	        alarm(1);
-	        k_return_from_switch();
-
-}
-
-int clock_get_time() {
-    return numOfTicks;
-}
-
-void clock_inc_time() {
-    numOfTicks++;
-}
-
-void clock_set_time(int time) {
-    numOfTicks = time;
-}
-

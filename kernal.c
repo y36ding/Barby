@@ -10,7 +10,6 @@ pcb* pid_to_pcb(int pid)
 		case 0 : return pcb_list[0];
 		case 1 : return pcb_list[1];
 		case 2 : return pcb_list[2];
-		case 3 : return pcb_list[3];
 		default: return NULL;
 
 	}
@@ -38,7 +37,6 @@ int k_release_message_env(MsgEnv* env)
 
 int k_send_message(int dest_process_id, MsgEnv *msg_envelope)
 {
-
 	if (DEBUG==1) {
 		ps("In send message");
 
@@ -49,6 +47,7 @@ int k_send_message(int dest_process_id, MsgEnv *msg_envelope)
 	pcb* dest_pcb =  pid_to_pcb(dest_process_id);
 
 	if (!dest_pcb || !msg_envelope) {
+		printf("The destPCB or MSG_ENV is empty\n");
 		return NULL_ARGUMENT;
 	}
 
@@ -65,7 +64,6 @@ int k_send_message(int dest_process_id, MsgEnv *msg_envelope)
 	MsgEnvQ_enqueue(dest_pcb->rcv_msg_queue, msg_envelope);
 	if (DEBUG==1){
 		printf("message SENT on enqueued on PID %i and its size is %i\n",dest_pcb->pid,MsgEnvQ_size(dest_pcb->rcv_msg_queue));
-		pm(msg_envelope);
 	}
 	return SUCCESS;
 }
@@ -77,7 +75,6 @@ MsgEnv* k_receive_message()
 		fflush(stdout);
 		//printf("Current PCB msgQ size is %i for PID %i\n", MsgEnvQ_size(current_process->rcv_msg_queue), current_process->pid );
 	}
-	//printf("===CURRENT PROCESS = %i\n",current_process->pid);
 	if (MsgEnvQ_size(current_process->rcv_msg_queue) > 0){
 		ret = (MsgEnv*)MsgEnvQ_dequeue(current_process->rcv_msg_queue);
 	}
@@ -171,13 +168,86 @@ void k_return_from_switch()
 	prev_process = current_process;
 }
 
-int k_request_delay(int delay, int wakeup_code, MsgEnv *msg_env)
+void k_process_switch(ProcessState next_state)
 {
-#if DEBUG
-    printf("%s is requesting a delay of %d with wakeup code %d\n", current_process->name,delay, wakeup_code);
-#endif
-    msg_env->msg_type = wakeup_code;
-    msg_env->time_delay = delay;
-    return k_send_message(TIMER_I_PROCESS_ID, msg_env);
+	pcb* next_process = PriorityQ_dequeue(rdy_proc_queue);
+	// Note this is not checking for null process. It is just for checking th dequeue
+	// was successful
+	if (next_process != NULL)
+	{
+		current_process->state = next_state;
+		pcb* old_process = current_process;
+		current_process = next_process;
+		k_context_switch(old_process->buf, next_process->buf);
+	}
 }
+
+void k_context_switch(jmp_buf* prev, jmp_buf* next)
+{
+	int val = setjmp(*prev);
+	if (val == 0)
+	{
+		longjmp(*next, 1);
+	}
+}
+
+int k_release_processor()
+{
+	PriorityQ_enqueue(current_process);
+	k_process_switch(READY);
+}
+
+int k_request_process_status(MsgEnv *env)
+{
+	char* status = (char*)env->data;
+	int i;
+	for (i = 0; i < PROCESS_COUNT; ++i)
+	{
+		*status = pcb_list[i]->pid;
+		status ++;
+		*status = pcb_list[i]->state;
+		status++;
+		*status = pcb_list[i]->priority;
+		status++;
+	}
+	return SUCCESS;
+}
+
+int k_terminate()
+{
+	cleanup();
+}
+
+int k_change_priority(int target_priority, int target_pid)
+{
+	if (target_priority >= 3 || target_priority < 0)
+			return ILLEGAL_ARGUMENT;
+
+	pcb* target_pcb = pid_to_pcb(target_pid);
+	if (target_pcb->pid == NULL_PROCESS_ID || target_pcb->is_i_process == TRUE)
+		return ILLEGAL_ARGUMENT;
+
+	// if on a ready queue, take if off, change priority, and put it back on
+    if(target_pcb->state == READY)
+    {
+        PriorityQ_dequeue(rdy_proc_queue, target_pcb);
+        target_pcb->priority = target_priority;
+        PriorityQ_enqueue(ready_pq, target_pcb);
+    }
+    else
+    {
+    	target_pcb->priority = target_priority;
+    }
+    return SUCCESS;
+}
+
+/*int k_log_message(MsgEnv* env, TraceBuffer* buff)
+{
+	if (env == NULL || buff == NULL)
+		return NULL_ARGUMENT;
+
+	// copy necessary fields from the message envelope to buffer tail
+	buff
+}*/
+
 

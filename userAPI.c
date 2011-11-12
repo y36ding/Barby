@@ -9,7 +9,7 @@ int send_message(int dest_process_id, MsgEnv *msg_envelope)
 	return ret;
 }
 
-MsgEnv *receive_message()
+MsgEnv* receive_message()
 {
 	atomic(ON);
 	MsgEnv* ret = k_receive_message();
@@ -50,3 +50,42 @@ MsgEnv* request_msg_env(){
 	return ret;
 }
 
+int release_processor()
+{
+	atomic(ON);
+	int ret = k_release_processor();
+	atomic(OFF);
+	return ret;
+}
+
+int request_process_status(MsgEnv *env)
+{
+	atomic(ON);
+	int ret = k_request_process_status(env);
+	atomic(OFF);
+	return ret;
+}
+
+int terminate()
+{
+	atomic(ON);
+	int ret = k_terminate();
+	atomic(OFF);
+	return ret;
+}
+
+int change_priority(int new_priority, int target_pid)
+{
+	atomic(ON);
+	int ret = k_change_priority(new_priority, target_pid);
+	atomic(OFF);
+	return ret;
+}
+
+int get_trace_buffer(MsgEnv *env)
+{
+	atomic(ON);
+	int ret = k_get_trace_buffer(env);
+	atomic(OFF);
+	return ret;
+}

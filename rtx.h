@@ -19,6 +19,7 @@
 
 #include "iProcs.h"
 #include "kbcrt.h"
+#include <setjmp.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -30,15 +31,14 @@
 #define KB_I_PROCESS_ID        0
 #define CRT_I_PROCESS_ID       1
 #define P_PROCESS_ID 		   2
-#define TIMER_I_PROCESS_ID	   3
+#define NULL_PROCESS_ID 666
 
 // RTX Constants
 #define MSG_ENV_SIZE 100
 #define MSG_ENV_COUNT 50
 #define NUM_PRIORITY_LEVEL 5
-#define PROCESS_COUNT 4
+#define PROCESS_COUNT 3
 #define STACK_SIZE 100
-#define NUM_PRIORITIES 4
 
 // error codes
 #define SUCCESS 0
@@ -58,6 +58,10 @@ typedef int bool;
 
 void die(int signal);
 
+typedef void (*pc)();
+
+void processP();
+
 typedef enum msg_type {
     CONSOLE_INPUT, DISPLAY_ACK, COUNT_REPORT, WAKEUP10
 }MsgType;
@@ -68,7 +72,6 @@ typedef struct MsgEnv {
     int 	sender_pid;
     MsgType 	msg_type;
     char    *data;
-    int time_delay;
 } MsgEnv;
 
 typedef enum process_states {
@@ -88,8 +91,12 @@ typedef struct process_control_block {
 	char* name;
 	MsgEnvQ*  rcv_msg_queue;
 	struct process_control_block* next;
+	jmp_buf* buf;
+	pc pc_location;
+    char * stack;
 	int a_count;
 	bool is_i_process;
+	struct process_control_block* next_pcb;
 } pcb;
 
 typedef struct init_proc
@@ -98,28 +105,29 @@ typedef struct init_proc
 	int pid;
 	int priority;
 	bool is_i_process;
+	pc pc_location;
 }InitProc;
 
-typedef struct proc_queue {
-    pcb *head;
-    pcb *tail;
-} proc_queue;
+typedef struct trace_log{
+	int source_pid; 	//sender‟s process id
+	int destination_pid; 	//receiver‟s process id
+	MsgType message_type; // message type
+	int time_stamp; //the time the message is sent or received
+} TraceLog;
 
-typedef struct proc_pq {
-    int num_priorities;
-    proc_queue **priority_queues;
-} proc_pq;
+typedef struct trace_buffer {
+	int head; //head index
+	int tail; //tail index
+	TraceLog buff[16]; // buffer data of 16 TraceLogs
+} TraceBuffer;
 
 // global variables
-
-proc_pq* ProcessPQ;
-
-
 pcb* current_process;
 pcb* prev_process;
 MsgEnvQ* free_env_queue;
 pcb* pcb_list[PROCESS_COUNT];
 MsgEnvQ* displayQ;
+
 
 // globals
 inputbuf * in_mem_p_key;	// pointer to structure that is the shared memory
@@ -134,12 +142,13 @@ int fid, fid2, status;		//used to create the shared memory
 int numOfTicks;
 int displayClock;
 
+TraceBuffer send_trace_buf;
+TraceBuffer receive_trace_buf;
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 char * sfilename;
 char * cfilename;
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-MsgEnv * timeout_q;
 
 #endif
 

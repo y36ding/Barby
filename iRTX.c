@@ -90,8 +90,11 @@ int main()
     }
 
     MsgEnv* timer_env = request_msg_env();
-
-    k_request_delay(5,WAKEUP10,timer_env);
+    int i;
+    for(i = 2; i < 5; i+=3) {
+    	k_request_delay(i,WAKEUP10,timer_env);
+    	usleep(1000000000);
+    }
 
     processP();
 

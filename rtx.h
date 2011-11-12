@@ -107,7 +107,7 @@ typedef struct proc_queue {
 
 typedef struct proc_pq {
     int num_priorities;
-    proc_queue *priority_queues[NUM_PRIORITIES];
+    proc_queue **priority_queues;
 } proc_pq;
 
 // global variables

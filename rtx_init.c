@@ -2,6 +2,7 @@
 #include "rtx.h"
 #include "kbcrt.h"
 #include "MsgEnvQueue.h"
+#include "processQ.h"
 
 
 // Initialization Table
@@ -25,13 +26,11 @@ int init_globals() {
 
 	ProcessPQ = (proc_pq*)malloc(sizeof(proc_pq));
 	ProcessPQ->num_priorities = NUM_PRIORITIES;
-	for (int i =0; i<NUM_PRIORITIES; i++) {
-		ProcessPQ->priority_queues[i] = (proc_queue*)malloc(sizeof(proc_queue));
-		ProcessPQ->priority_queues[i]->proc_q_create();
+	int i;
+	for (i =0; i<NUM_PRIORITIES; i++) {
+		ProcessPQ->priority_queues[i] = proc_pq_create();//(proc_queue*)malloc(sizeof(proc_queue));
+		ProcessPQ->priority_queues[i] = proc_q_create();
 	}
-
-
-
 
 	timeout_q = NULL;
 	fflush(stdout);
